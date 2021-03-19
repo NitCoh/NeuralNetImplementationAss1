@@ -114,6 +114,7 @@ def L_model_forward(X, parameters, use_batchnorm: bool):
 
     return cur_x, caches
 
+
 def compute_cost(AL, Y):
     """
     Implement the cost function defined by equation.
@@ -122,8 +123,26 @@ def compute_cost(AL, Y):
     :param Y: the labels vector (i.e. the ground truth)
     :return: cost – the cross-entropy cost
     """
-    m = len(Y)
-    return - np.einsum('ij,ij', np.log(AL), Y) / m
+
+    def expand_Y(Y, l, m):
+        C = np.zeros((l, m))
+        for i, cl in enumerate(Y):
+            C[cl, i] = 1
+        return C
+
+    l, m = AL.shape
+    C = expand_Y(Y, l, m)
+    return - np.einsum('ij,ij', np.log(AL), C) / m
+
 
 def apply_batchnorm(A):
-    return A
+    """
+    performs batchnorm on the received activation values of a given layer.
+    :param A: The activation values of a given layer 
+    :return: The normalized activation values, based on the formula learned in class
+    """
+    mean = np.expand_dims(A.mean(axis=1), axis=-1)
+    var = np.expand_dims(A.var(axis=1), axis=-1)
+    epsilon = 1e-4
+    a_norm = (A - mean) / (var + epsilon)
+    return a_norm
