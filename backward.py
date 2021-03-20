@@ -19,7 +19,7 @@ def linear_backward(dZ, cache):
     m = A_prev.shape[-1]
     dW = dZ @ A_prev.T
     db = np.sum(dZ, axis=1) / m
-    dA_prev = dZ @ W  # (dL/dZ) @ (dZ/dA_prev)
+    dA_prev = W.T @ dZ  # (dL/dZ) @ (dZ/dA_prev)
     return dA_prev, dW, db
 
 
@@ -149,6 +149,6 @@ def Update_parameters(parameters, grads, learning_rate):
 
     for i, (W, b) in enumerate(zip(parameters["weights"], parameters["bias"])):
         parameters["weights"][i] = W - learning_rate * grads['dW' + f'{str(i)}']
-        parameters["bias"][i] = b - learning_rate * grads['db' + f'{str(i)}']
+        parameters["bias"][i] = b - learning_rate * np.expand_dims(grads['db' + f'{str(i)}'], axis=-1)
 
     return parameters
