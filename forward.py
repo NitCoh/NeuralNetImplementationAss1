@@ -5,15 +5,16 @@ def initialize_parameters(layers_dim):
     """
     Initialisation of all layers weights and biases
     :param layers_dim: list of dims for each layer in the network
-    :return: A dictionary containing the initialized W and b parameters of each layer (W1…WL, b1…bL).
+    :return:
+     A dictionary containing the initialized W and b parameters of each layer (W1…WL, b1…bL).
     """
     ans = {
         "weights": [],
         "bias": []
     }
     for pair in zip(layers_dim, layers_dim[1:]):
-        W = np.random.randn(*pair)  # shape: [previous_layer, current_layer]
-        b = np.zeros(pair[-1])
+        W = np.random.randn(*pair).T  # shape: [out_dim, in_dim]
+        b = np.zeros((pair[-1], 1))
         ans["weights"].append(W)
         ans["bias"].append(b)
 
@@ -61,7 +62,9 @@ def relu(Z):
     :param Z:
     :return:
     """
-    A = np.array([x if x > 0 else 0 for x in Z])
+    pred = lambda x: x if x > 0 else 0
+    f = np.vectorize(pred, otypes=[float])
+    A = f(Z)
     activation_cache = {
         "Z": Z
     }
@@ -130,9 +133,10 @@ def compute_cost(AL, Y):
             C[cl, i] = 1
         return C
 
-    l, m = AL.shape
-    C = expand_Y(Y, l, m)
-    return - np.einsum('ij,ij', np.log(AL), C) / m
+    # l, m = AL.shape
+    # C = expand_Y(Y, l, m)
+    m = len(Y)
+    return - np.einsum('ij,ij', np.log(AL), Y) / m
 
 
 def apply_batchnorm(A):
