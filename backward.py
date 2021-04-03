@@ -1,5 +1,5 @@
 import numpy as np
-
+from forward import expand_y
 
 def linear_backward(dZ, cache):
     """
@@ -14,9 +14,9 @@ def linear_backward(dZ, cache):
     A_prev = cache["A"]
     W = cache["W"]
     m = A_prev.shape[-1]
+    dA_prev = W.T @ dZ  # (dL/dZ) @ (dZ/dA_prev)
     dW = dZ @ A_prev.T  # linear output = W(A_prev) + b
     db = np.sum(dZ, axis=1) / m
-    dA_prev = W.T @ dZ  # (dL/dZ) @ (dZ/dA_prev)
 
     return dA_prev, dW, db
 
@@ -119,7 +119,8 @@ def L_model_backward(AL, Y, caches):
     grads = {}
     m = len(Y)
     reversed_cache = reversed(list(enumerate(caches)))
-    dA = (AL - Y) / m  # this is dZ actually.
+    C = expand_y(Y, *AL.shape)
+    dA = (AL - C) / m  # this is dZ actually.
 
     for layer, cache in reversed_cache:
         dA_prev, dW, db = linear_activation_backward(dA, cache, 'relu')

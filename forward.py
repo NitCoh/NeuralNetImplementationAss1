@@ -52,6 +52,7 @@ def softmax(Z):
     """
     A = np.exp(Z - np.amax(Z, 0, keepdims=True))  # numerical stability
     A = A / A.sum(0, keepdims=True)  # broadcasting
+    # A = np.exp(Z) / np.sum(np.exp(Z), axis=0)
     activation_cache = {
         "Z": Z
     }
@@ -119,7 +120,7 @@ def L_model_forward(X, parameters, use_batchnorm: bool):
     for i, (W, b) in enumerate(zip(parameters["weights"], parameters["bias"])):
         activation = 'relu' if i < L - 1 else 'softmax'
         A, cache = linear_activation_forward(AL, W, b, activation)
-        if use_batchnorm:
+        if use_batchnorm and i < L - 1:  # no batch-norm on output layer
             A = apply_batchnorm(A)
         AL = A
         caches.append(cache)
@@ -134,8 +135,14 @@ def compute_cost(AL, Y):
     :param Y: the labels vector (i.e. the ground truth)
     :return: cost – the cross-entropy cost
     """
-    m = len(Y)
-    cost = - np.einsum('ij,ij', np.log(AL), Y) / m
+
+    epsilon = 1e-15
+    m = AL.shape[-1]
+    C = expand_y(Y, *AL.shape)
+    log_res = np.log(AL + epsilon)
+    # masked = np.ma.log(AL)
+    # cost = - (masked * C).sum() / m
+    cost = - np.einsum('ij,ij', log_res, C) / m
 
     return cost
 
@@ -152,3 +159,16 @@ def apply_batchnorm(A):
     NA = (A - mean) / (var + epsilon)
 
     return NA
+
+
+def expand_y(y, l, m):
+    """
+    C[i][j] =  example j has label i ? 1 : 0
+    :param m:
+    :param y: vector of labels size (m, ) where yi belongs to {0...l-1}
+    :return: C size (l, m) where l is the num of classes, m is the num of examples in batch.
+    """
+    C = np.zeros((l, m))
+    for i, cl in enumerate(y):
+        C[cl, i] = 1
+    return C
