@@ -75,7 +75,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
             batch_indices = indices[i:i + batch_size]
             yield input_data[:, batch_indices], input_labels[batch_indices]
 
-    epsilon = 1e-15
+    epsilon = 1e-2
     costs = []
     valid_accs = []
     iterations_save = []
@@ -83,8 +83,10 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
 
     (x_train, y_train), (x_valid, y_valid) = split_train(X, Y)
 
+    to_watch = 100
+
     steps = 0
-    last_valid_acc = None
+    last_valid_acc = []
     done = False
     train_step = 0
     while not done:
@@ -93,7 +95,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
             curr_iteration_mean_loss = []
 
             for batch_num, (batch, y) in enumerate(batch_gen):
-                AL, caches = L_model_forward(batch, parameters, False)
+                AL, caches = L_model_forward(batch, parameters, True)
                 cost = compute_cost(AL, y)
                 grads = L_model_backward(AL, y, caches)
                 parameters = Update_parameters(parameters, grads, learning_rate)
@@ -104,16 +106,21 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
                     iterations_save.append(steps)
                     valid_acc = Predict(x_valid, y_valid, parameters)
                     valid_accs.append(valid_acc)
+                    last_valid_acc.append(valid_acc)
                     print(f'Training step: {train_step} Epoch {i}, step: {steps}, validation acc: {valid_acc}\n' + "=" * 80)
 
+                    # is_better = len(last_valid_acc) < to_watch or \
+                    #             any([y - x >= epsilon for x,y in zip(last_valid_acc, last_valid_acc[1:])])
 
-                    is_better = last_valid_acc is None or steps < 90000 or abs(last_valid_acc - valid_acc) >= epsilon
+                    is_better = len(last_valid_acc) < to_watch or \
+                                max(last_valid_acc) - min(last_valid_acc) > epsilon
 
                     if not is_better:
                         done = True
                         break
                     else:
-                        last_valid_acc = valid_acc
+                        if len(last_valid_acc) >= to_watch:
+                            last_valid_acc.pop(0)
 
                 steps += 1
 
@@ -159,7 +166,7 @@ def Predict(X, Y, parameters):
     Use the softmax function to normalize the output values
     """
 
-    y_hat, _ = L_model_forward(X, parameters, False)  # y_hat shape: (num_classes, num_examples)
+    y_hat, _ = L_model_forward(X, parameters, True)  # y_hat shape: (num_classes, num_examples)
     y_hat_preds = np.argmax(y_hat, axis=0)
     # y_preds = np.argmax(Y, axis=1)
 
