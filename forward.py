@@ -50,10 +50,10 @@ def softmax(Z):
     A – the activations of the layer
     activation_cache – returns Z, which will be useful for the backpropagation
     """
-    # A = np.exp(Z - np.amax(Z, 0, keepdims=True))  # numerical stability
-    # A = A / A.sum(0, keepdims=True)  # broadcasting
-    res = np.exp(Z)
-    A = res / np.sum(res, axis=0)
+    A = np.exp(Z - np.amax(Z, 0, keepdims=True))  # numerical stability
+    A = A / A.sum(0, keepdims=True)  # broadcasting
+    # res = np.exp(Z)
+    # A = res / np.sum(res, axis=0)
     activation_cache = {
         "Z": Z
     }
@@ -163,8 +163,8 @@ def apply_batchnorm(A):
     """
     mean = np.expand_dims(A.mean(axis=1), axis=-1)
     var = np.expand_dims(A.var(axis=1), axis=-1)
-    epsilon = 1e-4
-    NA = (A - mean) / (var + epsilon)
+    epsilon = 1e-15
+    NA = (A - mean) / np.sqrt(var + epsilon)
 
     return NA
 
