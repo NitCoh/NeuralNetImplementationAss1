@@ -50,9 +50,10 @@ def softmax(Z):
     A – the activations of the layer
     activation_cache – returns Z, which will be useful for the backpropagation
     """
-    A = np.exp(Z - np.amax(Z, 0, keepdims=True))  # numerical stability
-    A = A / A.sum(0, keepdims=True)  # broadcasting
-    # A = np.exp(Z) / np.sum(np.exp(Z), axis=0)
+    # A = np.exp(Z - np.amax(Z, 0, keepdims=True))  # numerical stability
+    # A = A / A.sum(0, keepdims=True)  # broadcasting
+    res = np.exp(Z)
+    A = res / np.sum(res, axis=0)
     activation_cache = {
         "Z": Z
     }
@@ -143,6 +144,13 @@ def compute_cost(AL, Y):
     # masked = np.ma.log(AL)
     # cost = - (masked * C).sum() / m
     cost = - np.einsum('ij,ij', log_res, C) / m
+
+
+    # cost = 0
+    # for example, true_class in zip(AL.T, Y):
+    #     cost += np.log(example[true_class])
+    #
+    # cost = - cost / m
 
     return cost
 

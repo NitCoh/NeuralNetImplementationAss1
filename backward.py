@@ -14,9 +14,9 @@ def linear_backward(dZ, cache):
     A_prev = cache["A"]
     W = cache["W"]
     m = A_prev.shape[-1]
-    dA_prev = W.T @ dZ  # (dL/dZ) @ (dZ/dA_prev)
-    dW = dZ @ A_prev.T  # linear output = W(A_prev) + b
+    dW = dZ @ A_prev.T / m  # linear output = W(A_prev) + b
     db = np.sum(dZ, axis=1) / m
+    dA_prev = W.T @ dZ  # (dL/dZ) @ (dZ/dA_prev)
 
     return dA_prev, dW, db
 
@@ -43,7 +43,7 @@ def linear_activation_backward(dA, cache, activation):
     dA_prev = (dA1) = dL/dA1
     dW = dL/dW2
     db = dL/db
-    
+
     Now lets use our functions.
     We know that calling the activation backwards with dL/dA2 return dZ2.
     To calculate dW2 and db2 we need dZ2, so we call linear_backwards which does the following calculation:
@@ -53,11 +53,11 @@ def linear_activation_backward(dA, cache, activation):
                         (dA2/dZ2) *
                          (dZ2/dA1 = W2)
      = (dL/dZ2) * (dZ2/dA1)
-     
+
      Each backward_func is supposed to get dL/dA_cur as an input
      and chain by multiplication:
      (dL/dA_cur) @ (dA_cur/dZ_cur)
-     
+
      Assume y_hat = softmax(Z_last)
      The last layer has:
      dA_last=dy_hat=(dL/dy_hat) ==== - (1/m) * [sum[1 to m] of (1/y_hat_i)]
@@ -118,12 +118,16 @@ def L_model_backward(AL, Y, caches):
     """
     grads = {}
     m = len(Y)
+    num_of_transitions = len(caches)
     reversed_cache = reversed(list(enumerate(caches)))
     C = expand_y(Y, *AL.shape)
-    dA = (AL - C) / m  # this is dZ actually.
+    # dA = np.sum((AL - C), axis=1) / m  # this is dZ actually.
+    # dA = (AL - C) / m  # this is dZ actually.
+    dA = AL - C
 
     for layer, cache in reversed_cache:
-        dA_prev, dW, db = linear_activation_backward(dA, cache, 'relu')
+        activation = 'softmax' if layer == num_of_transitions - 1 else 'relu'
+        dA_prev, dW, db = linear_activation_backward(dA, cache, activation)
         grads['dA' + f'{str(layer)}'] = dA
         grads['dW' + f'{str(layer)}'] = dW
         grads['db' + f'{str(layer)}'] = db

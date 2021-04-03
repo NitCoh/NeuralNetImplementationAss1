@@ -86,13 +86,14 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
     steps = 0
     last_valid_acc = None
     done = False
+    train_step = 0
     while not done:
         for i in range(num_iterations):
             batch_gen = create_batches(x_train, y_train, batch_size)
             curr_iteration_mean_loss = []
 
             for batch_num, (batch, y) in enumerate(batch_gen):
-                AL, caches = L_model_forward(batch, parameters, True)
+                AL, caches = L_model_forward(batch, parameters, False)
                 cost = compute_cost(AL, y)
                 grads = L_model_backward(AL, y, caches)
                 parameters = Update_parameters(parameters, grads, learning_rate)
@@ -103,7 +104,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
                     iterations_save.append(steps)
                     valid_acc = Predict(x_valid, y_valid, parameters)
                     valid_accs.append(valid_acc)
-                    print(f'Epcoh {i}, step: {steps}, validation acc: {valid_acc}\n' + "=" * 80)
+                    print(f'Training step: {train_step} Epoch {i}, step: {steps}, validation acc: {valid_acc}\n' + "=" * 80)
 
 
                     is_better = last_valid_acc is None or steps < 90000 or abs(last_valid_acc - valid_acc) >= epsilon
@@ -121,6 +122,9 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
             print(f"Epoch {i} mean loss: {avg_loss}\n" + "=" * 80)
             if done:
                 break
+
+        train_step +=1
+
 
     train_acc = Predict(x_train, y_train, parameters)
     print(f'Last training step train accuracy: {train_acc}')
@@ -155,7 +159,7 @@ def Predict(X, Y, parameters):
     Use the softmax function to normalize the output values
     """
 
-    y_hat, _ = L_model_forward(X, parameters, True)  # y_hat shape: (num_classes, num_examples)
+    y_hat, _ = L_model_forward(X, parameters, False)  # y_hat shape: (num_classes, num_examples)
     y_hat_preds = np.argmax(y_hat, axis=0)
     # y_preds = np.argmax(Y, axis=1)
 

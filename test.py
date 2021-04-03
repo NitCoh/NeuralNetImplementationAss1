@@ -18,21 +18,23 @@ import tensorflow_datasets as tfds
 #               batch_size=2)
 
 
-
-
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data('./data')
 x_train = x_train.reshape(x_train.shape[0], -1).T / 255
 x_test = x_test.reshape(x_test.shape[0], -1).T / 255
+
+# x_train = np.random.randn(3, 20)
+# y_train = np.random.randint(0, 10, 20)
+
 layers_dim = [784, 20, 7, 5, 10]
 parameters, costs = L_layer_model(x_train, y_train,
-              layers_dims=layers_dim,
-              learning_rate=0.009,
-              num_iterations=30,
-              batch_size=64)
+                                  layers_dims=layers_dim,
+                                  learning_rate=0.009,
+                                  num_iterations=30,
+                                  batch_size=64)
+
 
 test_acc = Predict(x_test, y_test, parameters)
 print(f'Last training step test accuracy: {test_acc}')
-
 
 
 # print()
@@ -74,7 +76,7 @@ def train_with_tensorflow():
         tf.keras.layers.Dense(10)
     ])
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.009),
+        optimizer=tf.keras.optimizers.SGD(0.009),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
     )
@@ -84,3 +86,5 @@ def train_with_tensorflow():
         epochs=6,
         validation_data=ds_test,
     )
+
+# train_with_tensorflow()
