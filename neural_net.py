@@ -4,47 +4,6 @@ from forward import *
 from backward import *
 
 
-# def jack_test(X, y, layers_dims):
-#     # gradient for all the net
-#     parameters = initialize_parameters(layers_dims)  # dict
-#
-#     AL, caches = L_model_forward(X, parameters, False)
-#     loss_value = compute_cost(AL, y)
-#     grads = L_model_backward(AL, y, caches)
-#
-#     # logits = nn.forward(X)
-#     # loss_grad = (np.array([1]*1).reshape(1, 1), None, None)
-#     # loss_value = loss.forward(logits, y)
-#     loss_grad = loss.backward()
-#     _, last_grad = nn.backward(loss_grad)
-#     dx, dw, db = last_grad
-#     d_for_x = np.random.dirichlet(np.ones(X.shape[0]), size=1).T  # (r, 1)
-#     e_0 = 2
-#     epsilons = []
-#     linear = []
-#     quad = []
-#     for i in range(10):
-#         e_now = ((0.5) ** i) * e_0
-#         epsilons.append(e_now)
-#         v = d_for_x * e_now
-#         f_x = loss_value
-#         f_x_pert = loss.forward(nn.forward(X + v), y)
-#         jack = dx.T @ v
-#         linear.append(np.abs(f_x_pert - f_x))
-#         quad.append(np.abs(f_x_pert - f_x - jack.item()))
-#
-#     plt.xlabel = 'epsilon'
-#     plt.ylabel = 'error'
-#     plt.plot(epsilons, linear, label='linear-x')
-#     plt.legend()
-#     plt.show()
-#     plt.plot(epsilons, quad, label='quad-x')
-#     plt.legend()
-#     plt.show()
-#     plt.plot(epsilons, [x / y for x, y in zip(quad, linear)], label='quad/linear')
-#     plt.legend()
-#     plt.show()
-
 def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
     """
     Implements a L-layer neural network.
@@ -54,7 +13,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
     Please select a batch size that enables your code to run well (i.e. no memory overflows while still running relatively fast).
 
     :param X:  the input data, a numpy array of shape (height*width , number_of_examples)
-    :param Y:  the “real” labels of the data, a vector of shape (num_of_classes, number of examples)
+    :param Y:  the “real” labels of the data, a vector of shape (number of examples, 1)
     :param layers_dims: a list containing the dimensions of each layer, including the input
     :param learning_rate:
     :param num_iterations:
@@ -63,7 +22,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
     parameters – the parameters learnt by the system during the training
                 (the same parameters that were updated in the update_parameters function).
     costs – the values of the cost function (calculated by the compute_cost function).
-    One value is to be saved after each 100 training iterations (e.g. 3000 iterations -> 30 values). 
+    One value is to be saved after each 100 training iterations (e.g. 3000 iterations -> 30 values)
     """
 
     def create_batches(input_data, input_labels, batch_size):
@@ -81,36 +40,35 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
     iterations_save = []
     parameters = initialize_parameters(layers_dims)  # dict
 
-    (x_train, y_train), (x_valid, y_valid) = split_train(X, Y)
+    (x_train, y_train), (x_valid, y_valid) = split_train(X, Y, p=20)  # split with 20 percent validation
 
     to_watch = 100
-
-    steps = 0
+    steps = 1
     last_valid_acc = []
     done = False
-    train_step = 0
+    train_iterations = 1
+
     while not done:
-        for i in range(num_iterations):
+        for i in range(1, num_iterations + 1):
             batch_gen = create_batches(x_train, y_train, batch_size)
             curr_iteration_mean_loss = []
 
             for batch_num, (batch, y) in enumerate(batch_gen):
-                AL, caches = L_model_forward(batch, parameters, True)
+                AL, caches = L_model_forward(batch, parameters, use_batchnorm=False)
                 cost = compute_cost(AL, y)
                 grads = L_model_backward(AL, y, caches)
                 parameters = Update_parameters(parameters, grads, learning_rate)
                 curr_iteration_mean_loss.append(cost)
 
-                if steps != 0 and steps % 100 == 0:
+                if steps % 100 == 0:
                     costs.append(cost)
                     iterations_save.append(steps)
                     valid_acc = Predict(x_valid, y_valid, parameters)
                     valid_accs.append(valid_acc)
                     last_valid_acc.append(valid_acc)
-                    print(f'Training step: {train_step} Epoch {i}, step: {steps}, validation acc: {valid_acc}\n' + "=" * 80)
 
-                    # is_better = len(last_valid_acc) < to_watch or \
-                    #             any([y - x >= epsilon for x,y in zip(last_valid_acc, last_valid_acc[1:])])
+                    # print(f'Training iteration: {train_iterations} Epoch {i}, step: {steps}, '
+                    #       f'validation acc: {valid_acc}\n' + "=" * 80)
 
                     is_better = len(last_valid_acc) < to_watch or \
                                 max(last_valid_acc) - min(last_valid_acc) > epsilon
@@ -124,20 +82,20 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations, batch_size):
 
                 steps += 1
 
-
             avg_loss = np.average(curr_iteration_mean_loss)
-            print(f"Epoch {i} mean loss: {avg_loss}\n" + "=" * 80)
+            avg_acc = np.average(last_valid_acc)
+            print(f"Training iteration: {train_iterations}, Epoch {i} mean loss: {avg_loss:.5f}, "
+                  f"Mean validation accuracy: {avg_acc*100:.5f}%\n" + "=" * 80)
             if done:
                 break
 
-        train_step +=1
-
+        train_iterations += 1
 
     train_acc = Predict(x_train, y_train, parameters)
-    print(f'Last training step train accuracy: {train_acc}')
+    print(f'Last training step train accuracy: {train_acc*100:.5f}%')
 
     valid_acc = Predict(x_valid, y_valid, parameters)
-    print(f'Last validation step train accuracy: {valid_acc}')
+    print(f'Last validation step train accuracy: {valid_acc*100:.5f}%')
     plt.plot(iterations_save, costs)
     plt.ylabel('Loss')
     plt.xlabel('Iteration #')
@@ -165,25 +123,29 @@ def Predict(X, Y, parameters):
     (i.e. the percentage of the samples for which the correct label receives the hughest confidence score).
     Use the softmax function to normalize the output values
     """
-
-    y_hat, _ = L_model_forward(X, parameters, True)  # y_hat shape: (num_classes, num_examples)
+    y_hat, _ = L_model_forward(X, parameters, use_batchnorm=False)  # y_hat shape: (num_classes, num_examples)
     y_hat_preds = np.argmax(y_hat, axis=0)
     # y_preds = np.argmax(Y, axis=1)
 
     return (y_hat_preds == Y).mean()
 
 
-def split_train(x_train, y_train):
+def split_train(x_train, y_train, p: float):
     """
-    Auxillary function to split the train to train-valid
-    :param x_train: (features, examples)
-    :param y_train:
+    Auxiliary function to split the train into train and validation datasets
+    :param x_train: Train data, size [features, examples]
+    :param y_train: Train labels, size [examples, 1]
+    :param p: Percentage of the validation of all the training data
     :return:
+    train_tuple: Train data and labels
+    valid_tuple: Validation data and labels
     """
-    valid_size = int(x_train.shape[-1] / 5)
+    valid_size = int(x_train.shape[-1] * p / 100)
     indices = np.array(list(range(x_train.shape[-1])))
     np.random.shuffle(indices)
     valid_indices = indices[:valid_size]
     train_indices = indices[valid_size:]
-    return (x_train[:, train_indices], y_train[train_indices]), (
-        x_train[:, valid_indices], y_train[valid_indices])
+    train_tuple = (x_train[:, train_indices], y_train[train_indices])
+    valid_tuple = (x_train[:, valid_indices], y_train[valid_indices])
+
+    return train_tuple, valid_tuple

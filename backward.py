@@ -1,6 +1,7 @@
 import numpy as np
 from forward import expand_y
 
+
 def linear_backward(dZ, cache):
     """
     The linear part of the backward propagation process for a single layer
@@ -117,12 +118,9 @@ def L_model_backward(AL, Y, caches):
              grads["db" + str(l)] = ...
     """
     grads = {}
-    m = len(Y)
     num_of_transitions = len(caches)
     reversed_cache = reversed(list(enumerate(caches)))
     C = expand_y(Y, *AL.shape)
-    # dA = np.sum((AL - C), axis=1) / m  # this is dZ actually.
-    # dA = (AL - C) / m  # this is dZ actually.
     dA = AL - C
 
     for layer, cache in reversed_cache:

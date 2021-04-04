@@ -15,6 +15,7 @@ def initialize_parameters(layers_dim):
     }
     for pair in zip(layers_dim, layers_dim[1:]):
         W = np.random.randn(*pair).T  # shape: [out_dim, in_dim]
+
         b = np.zeros((pair[-1], 1))
         parameters["weights"].append(W)
         parameters["bias"].append(b)
@@ -52,8 +53,6 @@ def softmax(Z):
     """
     A = np.exp(Z - np.amax(Z, 0, keepdims=True))  # numerical stability
     A = A / A.sum(0, keepdims=True)  # broadcasting
-    # res = np.exp(Z)
-    # A = res / np.sum(res, axis=0)
     activation_cache = {
         "Z": Z
     }
@@ -118,10 +117,12 @@ def L_model_forward(X, parameters, use_batchnorm: bool):
     AL = X
     L = len(parameters["weights"])
     caches = []
-    for i, (W, b) in enumerate(zip(parameters["weights"], parameters["bias"])):
-        activation = 'relu' if i < L - 1 else 'softmax'
+
+    for l, (W, b) in enumerate(zip(parameters["weights"], parameters["bias"])):
+        activation = 'relu' if l < L - 1 else 'softmax'
         A, cache = linear_activation_forward(AL, W, b, activation)
-        if use_batchnorm and i < L - 1:  # no batch-norm on output layer
+
+        if use_batchnorm and l < L - 1:  # no batch-norm on output layer
             A = apply_batchnorm(A)
         AL = A
         caches.append(cache)
@@ -138,19 +139,10 @@ def compute_cost(AL, Y):
     """
 
     epsilon = 1e-15
-    m = AL.shape[-1]
+    c, m = AL.shape
     C = expand_y(Y, *AL.shape)
     log_res = np.log(AL + epsilon)
-    # masked = np.ma.log(AL)
-    # cost = - (masked * C).sum() / m
     cost = - np.einsum('ij,ij', log_res, C) / m
-
-
-    # cost = 0
-    # for example, true_class in zip(AL.T, Y):
-    #     cost += np.log(example[true_class])
-    #
-    # cost = - cost / m
 
     return cost
 
